@@ -5,19 +5,45 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import logo from '../../assets/images/logo.png';
 import FormField from '../../components/FormField';
 import CustomButton from '../../components/CustomButton'
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { app, auth } from '../../firebaseConfig';
+import ErrorPopup from '../../components/ErrorPopup';
+import { getFirebaseErrorMessage } from '../../constants/firebaseErrorHandler';
 
 const SignUp = () => {
-
   const [form, setForm] = useState({
     username: '',
     email: '',
     password: ''
   })
-
+  const [error, setError] = useState(null)
+  const [isPopupVisible, setIsPopupVisible] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const submit = () => {
+  const submit = async () => {
+    setIsSubmitting(true)
+    try {
+      const userCredentials = await createUserWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      )
+      const createdUser = userCredentials.user
 
+      await updateProfile(createdUser, { displayName: form.username })
+      console.log('user created:', userCredentials)
+    } catch (err) {
+      const errorMsg = getFirebaseErrorMessage(err.code)
+      setError(errorMsg)
+      setIsPopupVisible(true)
+      console.log('error creating user:', err)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const closePopup = () => {
+    setIsPopupVisible(false)
   }
 
   return (
@@ -69,6 +95,11 @@ const SignUp = () => {
           </View>
         </View>
       </ScrollView>
+      <ErrorPopup
+        errorMessage={error}
+        isVisible={isPopupVisible}
+        onClose={closePopup}
+      />
     </SafeAreaView>
   )
 }
