@@ -5,10 +5,18 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import logo from '../../assets/images/logo.png';
 import FormField from '../../components/FormField';
 import CustomButton from '../../components/CustomButton'
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { app, auth } from '../../firebaseConfig';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '../../firebaseConfig';
 import ErrorPopup from '../../components/ErrorPopup';
 import { getFirebaseErrorMessage } from '../../constants/firebaseErrorHandler';
+// cannot use react-native-keychain in Expo, will temporarily use expo-secure-store
+// import * as Keychain from 'react-native-keychain'
+import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
+
+// need to implement: 
+// username requirement!
+// field check
 
 const SignUp = () => {
   const [form, setForm] = useState({
@@ -29,9 +37,11 @@ const SignUp = () => {
         form.password
       )
       const createdUser = userCredentials.user
-
       await updateProfile(createdUser, { displayName: form.username })
+      await SecureStore.setItemAsync('userToken', createdUser.uid)
       console.log('user created:', userCredentials)
+      // add a welcome banner? tutorial?
+      router.push('/home')
     } catch (err) {
       const errorMsg = getFirebaseErrorMessage(err.code)
       setError(errorMsg)

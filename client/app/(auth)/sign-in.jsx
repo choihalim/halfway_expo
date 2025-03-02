@@ -5,6 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import logo from '../../assets/images/logo.png';
 import FormField from '../../components/FormField';
 import CustomButton from '../../components/CustomButton'
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../firebaseConfig';
+import ErrorPopup from '../../components/ErrorPopup';
+import { getFirebaseErrorMessage } from '../../constants/firebaseErrorHandler';
+// cannot use react-native-keychain in Expo, will temporarily use expo-secure-store
+// import * as Keychain from 'react-native-keychain'
+import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
 
 const SignIn = () => {
 
@@ -12,11 +20,37 @@ const SignIn = () => {
     email: '',
     password: ''
   })
-
+  const [error, setError] = useState(null)
+  const [isPopupVisible, setIsPopupVisible] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const submit = () => {
+  const submit = async () => {
+    setIsSubmitting(true)
+    try {
+      const userCredentials = await signInWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      )
+      const loggedUser = userCredentials.user
+      // cannot use Keychain for now
+      // await Keychain.setGenericPassword('userToken', loggedUser.uid);
+      await SecureStore.setItemAsync('userToken', loggedUser.uid)
+      // send user to home
+      router.push('/home')
+      console.log('user logged in:', loggedUser.displayName)
+    } catch (err) {
+      const errorMsg = getFirebaseErrorMessage(err.code)
+      setError(errorMsg)
+      setIsPopupVisible(true)
+      console.log('error logging in user:', err)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
+  const closePopup = () => {
+    setIsPopupVisible(false)
   }
 
   return (
@@ -62,6 +96,11 @@ const SignIn = () => {
           </View>
         </View>
       </ScrollView>
+      <ErrorPopup
+        errorMessage={error}
+        isVisible={isPopupVisible}
+        onClose={closePopup}
+      />
     </SafeAreaView>
   )
 }

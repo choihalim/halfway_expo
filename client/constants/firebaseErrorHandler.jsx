@@ -10,6 +10,8 @@ export const getFirebaseErrorMessage = (errorCode) => {
             return 'No user found with this email address.';
         case 'auth/wrong-password':
             return 'The password is incorrect. Please try again.';
+        case 'auth/missing-password':
+            return 'Please enter a password and try again.';
         default:
             return 'An error occurred.\nPlease make sure to fill in all required fields and try again.';
     }
