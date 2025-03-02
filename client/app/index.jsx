@@ -5,8 +5,50 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import "../global.css";
 import logo from '../assets/images/logo.png';
 import CustomButton from '../components/CustomButton';
+import { onAuthStateChanged, getAuth } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+// cannot use react-native-keychain in Expo, will temporarily use expo-secure-store
+// import * as Keychain from 'react-native-keychain'
+import * as SecureStore from 'expo-secure-store';
 
 export default function App() {
+
+    //user state
+    const [user, setUser] = useState(null);
+    // Firebase auth instance
+    const auth = getAuth();
+
+    useEffect(() => {
+        // check for user logged in on app load
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // set user 
+                setUser(user)
+                // store user info in Keychain
+                // await Keychain.setGenericPassword('userToken', user.uid)
+
+                // store user info in SecureStore
+                await SecureStore.setItemAsync('userToken', user.uid)
+            } else {
+                // no user signed in
+                setUser(null)
+                // await Keychain.resetGenericPassword()
+
+                // reset stored user credentials in SecureStore
+                await SecureStore.deleteItemAsync('userToken')
+            }
+        })
+
+        // clean up listener on component unmount
+        return () => {
+            auth.onAuthStateChanged(() => { })
+        }
+    }, [auth])
+
+    if (user) {
+        return <Redirect href='/home' />
+    }
+
     return (
         <SafeAreaView className="bg-primary h-full">
             <ScrollView contentContainerStyle={{ height: '100%' }}>
